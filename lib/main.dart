@@ -11,6 +11,107 @@ const Color azul = Color(0xFF0875C9);
 const Color textoClaro = Color(0xFFF2F5F8);
 const Color textoSecundario = Color(0xFFB8C5D1);
 
+class WelcomeScreen extends StatelessWidget {
+  const WelcomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Imagen de fondo relacionada con el cine.
+          Image.network(
+            'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=85',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: fondo);
+            },
+          ),
+
+          // Capa oscura para mejorar la lectura del texto.
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.35),
+                  Colors.black.withValues(alpha: 0.85),
+                ],
+              ),
+            ),
+          ),
+
+          // Contenido principal de la bienvenida.
+          SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.movie_creation_outlined,
+                      size: 82,
+                      color: Color(0xFF54B4FF),
+                    ),
+                    const SizedBox(height: 20),
+
+                    const Text(
+                      'CineLista',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    const Text(
+                      'Hello World',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 25,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    const Text(
+                      'Tu próxima película favorita te espera',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFFE0E0E0),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Botón para abrir el catálogo existente.
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CineListaPage(),
+                          ),
+                        );
+                      },
+                      child: const Text('Entrar al catálogo'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class CineListaApp extends StatelessWidget {
   const CineListaApp({super.key});
 
@@ -28,7 +129,7 @@ class CineListaApp extends StatelessWidget {
         ),
         fontFamily: 'Roboto',
       ),
-      home: const CineListaPage(),
+      home: const WelcomeScreen(),
     );
   }
 }
