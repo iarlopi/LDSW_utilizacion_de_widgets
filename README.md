@@ -161,3 +161,63 @@ El archivo principal de la aplicación es `lib/main.dart`.
 ## 6. Conclusión
 
 La actividad permite comprender cómo combinar los widgets básicos de Flutter para construir una interfaz organizada y visualmente coherente. En CineLista, estos widgets trabajan conjuntamente para presentar la información de películas mediante secciones, tarjetas y elementos superpuestos.
+
+## 7. Creación de la pantalla de bienvenida (Home Screen)
+
+### 7.1. Objetivo
+
+Crear una pantalla de bienvenida para CineLista que muestre una imagen de fondo, el nombre de la aplicación, un icono relacionado con el cine y el mensaje "Hello World", utilizando widgets de Flutter.
+
+### 7.2. Elementos implementados
+
+La pantalla de bienvenida se estableció como la pantalla inicial de la aplicación. Incluye los siguientes elementos:
+
+- **Imagen de fondo:** se utiliza `Image.network` para cargar una imagen relacionada con una sala de cine desde Internet.
+- **Nombre de la aplicación:** se muestra el título `CineLista`.
+- **Mensaje de bienvenida:** se incorpora el texto `Hello World`, solicitado en la actividad.
+- **Icono:** se utiliza `Icon` con `Icons.movie_creation_outlined` para representar el cine.
+- **Texto descriptivo:** se añade el mensaje "Tu próxima película favorita te espera".
+- **Botón de navegación:** el botón "Entrar al catálogo" permite acceder a la pantalla del catálogo existente.
+
+### 7.3. Widgets y componentes utilizados
+
+- **`Scaffold`:** proporciona la estructura básica de la pantalla.
+- **`Stack`:** permite superponer la imagen de fondo, una capa oscura y el contenido principal.
+- **`Image.network`:** carga la imagen de fondo desde una dirección web.
+- **`Container`:** incorpora un degradado oscuro que facilita la lectura del texto.
+- **`SafeArea`:** ayuda a mantener el contenido dentro del área segura de la pantalla.
+- **`Center`:** centra el contenido.
+- **`Padding`:** establece el espacio alrededor de los elementos.
+- **`Column`:** organiza verticalmente el icono, los textos y el botón.
+- **`Text`:** muestra el nombre de la aplicación y los mensajes.
+- **`Icon`:** muestra el icono relacionado con el cine.
+- **`ElevatedButton`:** presenta el botón de acceso al catálogo.
+- **`Navigator.push` y `MaterialPageRoute`:** permiten navegar desde la pantalla de bienvenida hasta el catálogo.
+
+### 7.4. Pruebas realizadas
+
+La aplicación se ejecutó en Google Chrome para comprobar el funcionamiento de la pantalla de bienvenida. Se verificó que la imagen de fondo, el icono, el nombre CineLista y el mensaje "Hello World" se mostraran correctamente.
+
+También se comprobó que el botón "Entrar al catálogo" permitiera acceder a la pantalla del catálogo desarrollada previamente.
+
+### 7.5. Resultado
+
+Se implementó una pantalla de bienvenida funcional que cumple los requisitos de la actividad y permite acceder al catálogo existente sin perder la interfaz desarrollada anteriormente.
+
+## 8. Widgets adicionales de la pantalla de bienvenida
+
+Además de los widgets documentados en la sección 2, la pantalla de bienvenida incorpora otros componentes para organizar el contenido y facilitar la navegación.
+
+| Widget o componente | Uso en la pantalla de bienvenida |
+|---|---|
+| `Image.network` | Cargar la imagen de fondo desde Internet. |
+| `Icon` | Mostrar el icono de cine. |
+| `Scaffold` | Estructurar la pantalla. |
+| `SafeArea` | Respetar el área segura de visualización. |
+| `Center` | Centrar el contenido. |
+| `Padding` | Aplicar espaciado alrededor del contenido. |
+| `ElevatedButton` | Mostrar el botón para entrar al catálogo. |
+| `Navigator.push` | Abrir la pantalla del catálogo. |
+| `MaterialPageRoute` | Definir la ruta de navegación hacia el catálogo. |
+
+Estos componentes complementan los widgets básicos documentados anteriormente y permiten construir una pantalla de bienvenida visualmente organizada e integrada con el resto de CineLista.
