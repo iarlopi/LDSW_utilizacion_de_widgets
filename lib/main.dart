@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'services/peliculas_service.dart';
 
 void main() {
   runApp(const CineListaApp());
@@ -20,7 +21,6 @@ class WelcomeScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Imagen de fondo relacionada con el cine.
           Image.network(
             'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=85',
             fit: BoxFit.cover,
@@ -28,8 +28,6 @@ class WelcomeScreen extends StatelessWidget {
               return Container(color: fondo);
             },
           ),
-
-          // Capa oscura para mejorar la lectura del texto.
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -42,8 +40,6 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ),
           ),
-
-          // Contenido principal de la bienvenida.
           SafeArea(
             child: Center(
               child: Padding(
@@ -57,7 +53,6 @@ class WelcomeScreen extends StatelessWidget {
                       color: Color(0xFF54B4FF),
                     ),
                     const SizedBox(height: 20),
-
                     const Text(
                       'CineLista',
                       textAlign: TextAlign.center,
@@ -68,7 +63,6 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-
                     const Text(
                       'Hello World',
                       textAlign: TextAlign.center,
@@ -78,7 +72,6 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-
                     const Text(
                       'Tu próxima película favorita te espera',
                       textAlign: TextAlign.center,
@@ -88,8 +81,6 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 30),
-
-                    // Botón para abrir el catálogo existente.
                     ElevatedButton(
                       onPressed: () {
                         Navigator.push(
@@ -134,8 +125,26 @@ class CineListaApp extends StatelessWidget {
   }
 }
 
-class CineListaPage extends StatelessWidget {
+// Pantalla del catálogo de películas.
+class CineListaPage extends StatefulWidget {
   const CineListaPage({super.key});
+
+  @override
+  State<CineListaPage> createState() => _CineListaPageState();
+}
+
+class _CineListaPageState extends State<CineListaPage> {
+  final PeliculasService _servicioPeliculas = PeliculasService();
+
+  late Future<List<dynamic>> _peliculas;
+  late Future<Map<String, dynamic>> _destacada;
+
+  @override
+  void initState() {
+    super.initState();
+    _peliculas = _servicioPeliculas.obtenerPeliculas();
+    _destacada = _servicioPeliculas.obtenerDestacada();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +156,7 @@ class CineListaPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // TEXT: nombre y descripción de la aplicación.
+              // Nombre y descripción de la aplicación.
               const Text(
                 'CineLista',
                 style: TextStyle(
@@ -168,7 +177,7 @@ class CineListaPage extends StatelessWidget {
 
               const SizedBox(height: 22),
 
-              // CONTAINER: caja de búsqueda.
+              // Caja de búsqueda.
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
@@ -204,77 +213,143 @@ class CineListaPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // STACK: superpone el icono y una etiqueta al póster.
-              Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: 170,
-                    decoration: BoxDecoration(
-                      color: fondoTarjeta,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.movie_creation_outlined,
-                        size: 65,
-                        color: Color(0xFFB9C8D5),
+              // Película destacada obtenida desde TMDB.
+              FutureBuilder<Map<String, dynamic>>(
+                future: _destacada,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      height: 220,
+                      child: Center(
+                        child: CircularProgressIndicator(),
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 5,
+                    );
+                  }
+
+                  if (snapshot.hasError || !snapshot.hasData) {
+                    return const SizedBox(
+                      height: 170,
+                      child: Center(
+                        child: Text(
+                          'No se pudo cargar la película destacada.',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: azul,
-                        borderRadius: BorderRadius.circular(5),
+                    );
+                  }
+
+                  final pelicula = snapshot.data!;
+                  final titulo =
+                      pelicula['title']?.toString() ?? 'Sin título';
+
+                  final fecha =
+                      pelicula['release_date']?.toString() ?? '';
+
+                  final anio = fecha.length >= 4
+                      ? fecha.substring(0, 4)
+                      : 'Año no disponible';
+
+                  final duracion =
+                      pelicula['runtime']?.toString() ?? '';
+
+                  final generos =
+                      (pelicula['genres'] as List<dynamic>?)
+                              ?.map((genero) => genero['name'].toString())
+                              .join(' • ') ??
+                          '';
+
+                  final posterPath =
+                      pelicula['poster_path']?.toString();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Póster y etiqueta de recomendación.
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              height: 220,
+                              color: fondoTarjeta,
+                              child: posterPath != null &&
+                                      posterPath.isNotEmpty
+                                  ? Image.network(
+                                      'https://image.tmdb.org/t/p/w500$posterPath',
+                                      fit: BoxFit.contain,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return const Center(
+                                          child: Icon(
+                                            Icons.movie_creation_outlined,
+                                            size: 65,
+                                            color: Color(0xFFB9C8D5),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : const Center(
+                                      child: Icon(
+                                        Icons.movie_creation_outlined,
+                                        size: 65,
+                                        color: Color(0xFFB9C8D5),
+                                      ),
+                                    ),
+                            ),
+                            Positioned(
+                              top: 10,
+                              left: 10,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: azul,
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: const Text(
+                                  'RECOMENDADA',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const Text(
-                        'RECOMENDADA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
+
+                      const SizedBox(height: 12),
+
+                      // Título y datos dinámicos.
+                      Text(
+                        titulo,
+                        style: const TextStyle(
+                          color: textoClaro,
+                          fontSize: 21,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                      const SizedBox(height: 4),
+                      Text(
+                        '$anio • $generos • $duracion min',
+                        style: const TextStyle(
+                          color: textoSecundario,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: 12),
 
-              // COLUMN: título y datos de la película.
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Interstellar',
-                    style: TextStyle(
-                      color: textoClaro,
-                      fontSize: 21,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '2014 • Ciencia ficción • 169 min',
-                    style: TextStyle(
-                      color: textoSecundario,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // CONTAINER y TEXT: botón visual de detalle.
+              // Botón visual de detalle.
               Container(
                 width: double.infinity,
                 alignment: Alignment.center,
@@ -304,7 +379,7 @@ class CineListaPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // ROW: géneros distribuidos horizontalmente.
+              // Géneros distribuidos horizontalmente.
               Row(
                 children: [
                   _genero('Sci-Fi'),
@@ -327,31 +402,73 @@ class CineListaPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // ROW: dos tarjetas de películas populares.
-              const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: PeliculaPopular(
-                      titulo: 'Coco',
-                      datos: '2017 • Animación',
+              // Películas populares obtenidas desde TMDB.
+              FutureBuilder<List<dynamic>>(
+                future: _peliculas,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Text(
+                      'No se pudieron cargar las películas: ${snapshot.error}',
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                      ),
+                    );
+                  }
+
+                  final peliculas = snapshot.data ?? [];
+
+                  if (peliculas.isEmpty) {
+                    return const Text(
+                      'No hay películas disponibles.',
+                      style: TextStyle(color: textoClaro),
+                    );
+                  }
+
+                  // Contenedor que ocupa todo el ancho disponible.
+                  return SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 16,
+                      runSpacing: 20,
+                      children: peliculas.take(2).map((pelicula) {
+                        final titulo =
+                            pelicula['title']?.toString() ?? 'Sin título';
+
+                        final fecha =
+                            pelicula['release_date']?.toString() ?? '';
+
+                        final anio = fecha.length >= 4
+                            ? fecha.substring(0, 4)
+                            : 'Año no disponible';
+
+                        return SizedBox(
+                          width: 190,
+                          child: PeliculaPopular(
+                            titulo: titulo,
+                            datos: anio,
+                            posterPath:
+                                pelicula['poster_path']?.toString(),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                  ),
-                  SizedBox(width: 20),
-                  Expanded(
-                    child: PeliculaPopular(
-                      titulo: 'Parásitos',
-                      datos: '2019 • Thriller',
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ],
           ),
         ),
       ),
 
-      // Navegación inferior inspirada en el wireframe.
+      // Navegación inferior.
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(
@@ -360,12 +477,12 @@ class CineListaPage extends StatelessWidget {
         ),
         child: BottomNavigationBar(
           backgroundColor: fondo,
-          selectedItemColor: Color(0xFF54B4FF),
+          selectedItemColor: const Color(0xFF54B4FF),
           unselectedItemColor: textoClaro,
           selectedFontSize: 12,
           unselectedFontSize: 12,
           currentIndex: 0,
-          items: [
+          items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
               label: 'Inicio',
@@ -384,7 +501,7 @@ class CineListaPage extends StatelessWidget {
     );
   }
 
-  // Container y Text para cada etiqueta de género.
+  // Etiquetas de género.
   static Widget _genero(String nombre) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -407,47 +524,45 @@ class CineListaPage extends StatelessWidget {
   }
 }
 
+// Tarjeta de película popular.
 class PeliculaPopular extends StatelessWidget {
   final String titulo;
   final String datos;
+  final String? posterPath;
 
   const PeliculaPopular({
     super.key,
     required this.titulo,
     required this.datos,
+    this.posterPath,
   });
 
   @override
   Widget build(BuildContext context) {
-    // COLUMN: póster, título y datos.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // STACK: icono centrado sobre el fondo del póster.
-        Stack(
-          children: [
-            Container(
-              width: double.infinity,
-              height: 105,
-              decoration: BoxDecoration(
-                color: fondoTarjeta,
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            const Positioned.fill(
-              child: Center(
-                child: Icon(
-                  Icons.movie_creation_outlined,
-                  size: 34,
-                  color: Color(0xFFB9C8D5),
-                ),
-              ),
-            ),
-          ],
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            width: double.infinity,
+            height: 280,
+            child: posterPath != null && posterPath!.isNotEmpty
+                ? Image.network(
+                    'https://image.tmdb.org/t/p/w500$posterPath',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _posterPredeterminado();
+                    },
+                  )
+                : _posterPredeterminado(),
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           titulo,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: textoClaro,
             fontSize: 15,
@@ -463,6 +578,19 @@ class PeliculaPopular extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _posterPredeterminado() {
+    return Container(
+      color: fondoTarjeta,
+      child: const Center(
+        child: Icon(
+          Icons.movie_creation_outlined,
+          size: 40,
+          color: Color(0xFFB9C8D5),
+        ),
+      ),
     );
   }
 }
