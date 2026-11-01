@@ -349,20 +349,46 @@ class _CineListaPageState extends State<CineListaPage> {
 
               const SizedBox(height: 12),
 
-              // Botón visual de detalle.
-              Container(
+              // Botón para abrir los detalles de la película destacada.
+              SizedBox(
                 width: double.infinity,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: azul,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Ver detalle',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azul,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  onPressed: () async {
+                    try {
+                      final pelicula = await _destacada;
+
+                      if (!context.mounted) return;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              PeliculaDetallePage(pelicula: pelicula),
+                        ),
+                      );
+                    } catch (error) {
+                      if (!context.mounted) return;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'No se pudieron cargar los detalles de la película.',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Ver detalle',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -588,6 +614,136 @@ class PeliculaPopular extends StatelessWidget {
         child: Icon(
           Icons.movie_creation_outlined,
           size: 40,
+          color: Color(0xFFB9C8D5),
+        ),
+      ),
+    );
+  }
+}
+
+
+// Pantalla con la información completa de una película.
+class PeliculaDetallePage extends StatelessWidget {
+  final Map<String, dynamic> pelicula;
+
+  const PeliculaDetallePage({
+    super.key,
+    required this.pelicula,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final titulo = pelicula['title']?.toString() ?? 'Sin título';
+    final fecha = pelicula['release_date']?.toString() ?? '';
+    final anio = fecha.length >= 4 ? fecha.substring(0, 4) : 'No disponible';
+    final duracion = pelicula['runtime']?.toString() ?? '';
+    final sinopsis = pelicula['overview']?.toString() ?? '';
+    final calificacion = pelicula['vote_average'] is num
+        ? (pelicula['vote_average'] as num).toStringAsFixed(1)
+        : 'No disponible';
+
+    final generos = (pelicula['genres'] as List<dynamic>?)
+            ?.map((genero) => genero['name'].toString())
+            .join(' • ') ??
+        'No disponibles';
+
+    final posterPath = pelicula['poster_path']?.toString();
+
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(
+        backgroundColor: fondo,
+        foregroundColor: textoClaro,
+        title: const Text('Detalle de película'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    height: 360,
+                    width: 240,
+                    child: posterPath != null && posterPath.isNotEmpty
+                        ? Image.network(
+                            'https://image.tmdb.org/t/p/w500$posterPath',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _posterDetallePredeterminado();
+                            },
+                          )
+                        : _posterDetallePredeterminado(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  color: textoClaro,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '$anio • $generos${duracion.isNotEmpty ? ' • $duracion min' : ''}',
+                style: const TextStyle(
+                  color: textoSecundario,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Color(0xFFFFC857), size: 21),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$calificacion / 10',
+                    style: const TextStyle(
+                      color: textoClaro,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Sinopsis',
+                style: TextStyle(
+                  color: textoClaro,
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                sinopsis.isNotEmpty ? sinopsis : 'Sin sinopsis disponible.',
+                style: const TextStyle(
+                  color: textoSecundario,
+                  fontSize: 15,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _posterDetallePredeterminado() {
+    return Container(
+      color: fondoTarjeta,
+      child: const Center(
+        child: Icon(
+          Icons.movie_creation_outlined,
+          size: 65,
           color: Color(0xFFB9C8D5),
         ),
       ),
