@@ -64,7 +64,7 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     const Text(
-                      'Hello World',
+                      '¡Bienvenid@s!',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 25,
@@ -350,37 +350,38 @@ class _CineListaPageState extends State<CineListaPage> {
               const SizedBox(height: 12),
 
               // Botón para abrir los detalles de la película destacada.
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: azul,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
+              Center(
+                child: SizedBox(
+                  width: 180,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: azul,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
-                  ),
-                  onPressed: () async {
-                    try {
-                      final pelicula = await _destacada;
+                    onPressed: () async {
+                      try {
+                        final pelicula = await _destacada;
 
-                      if (!context.mounted) return;
+                        if (!context.mounted) return;
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              PeliculaDetallePage(pelicula: pelicula),
-                        ),
-                      );
-                    } catch (error) {
-                      if (!context.mounted) return;
+                        Navigator.push(
+                          context,
+                           MaterialPageRoute(
+                            builder: (context) =>
+                                PeliculaDetallePage(pelicula: pelicula),
+                          ),
+                        );
+                      } catch (error) {
+                        if (!context.mounted) return;
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'No se pudieron cargar los detalles de la película.',
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'No se pudieron cargar los detalles de la película.',
                           ),
                         ),
                       );
@@ -392,8 +393,9 @@ class _CineListaPageState extends State<CineListaPage> {
                   ),
                 ),
               ),
+            ),
 
-              const SizedBox(height: 25),
+            const SizedBox(height: 25),
 
               const Text(
                 'Por género',
@@ -482,6 +484,47 @@ class _CineListaPageState extends State<CineListaPage> {
                             datos: anio,
                             posterPath:
                                 pelicula['poster_path']?.toString(),
+                            onTap: () async {
+                              final id = pelicula['id'];
+
+                              if (id is! num) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'No se encontró el identificador de la película.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              try {
+                                final detalle = await _servicioPeliculas
+                                    .obtenerDetalle(id.toInt());
+
+                                if (!context.mounted) return;
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        PeliculaDetallePage(
+                                      pelicula: detalle,
+                                    ),
+                                  ),
+                                );
+                              } catch (error) {
+                                if (!context.mounted) return;
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'No se pudieron cargar los detalles de la película.',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
                           ),
                         );
                       }).toList(),
@@ -555,19 +598,24 @@ class PeliculaPopular extends StatelessWidget {
   final String titulo;
   final String datos;
   final String? posterPath;
+  final VoidCallback onTap;
 
   const PeliculaPopular({
     super.key,
     required this.titulo,
     required this.datos,
     this.posterPath,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(6),
           child: SizedBox(
@@ -603,7 +651,8 @@ class PeliculaPopular extends StatelessWidget {
             fontSize: 11,
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 
