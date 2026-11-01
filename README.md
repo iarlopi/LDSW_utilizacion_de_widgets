@@ -2,9 +2,11 @@
 
 ## 1. Descripción del proyecto
 
-CineLista es una interfaz móvil de catálogo de películas desarrollada con Flutter y Dart. Su diseño está inspirado en aplicaciones de cine y plataformas de entretenimiento, con una paleta de colores oscuros y elementos visuales organizados para facilitar la consulta de películas.
+CineLista es una aplicación móvil de catálogo de películas desarrollada con Flutter y Dart. Su diseño está inspirado en aplicaciones de cine y plataformas de entretenimiento, con una paleta de colores oscuros y elementos visuales organizados para facilitar la consulta de películas.
 
-El objetivo de esta actividad es practicar el uso de los widgets básicos de Flutter: `Text`, `Row`, `Column`, `Stack` y `Container`.
+El proyecto permite practicar el uso de los widgets básicos de Flutter, implementar la navegación entre pantallas y realizar peticiones HTTP para obtener información desde Internet.
+
+Para la consulta de películas se utiliza la API de **The Movie Database (TMDB)**, mediante un backend desarrollado en PHP que recibe las solicitudes de la aplicación y consulta los datos del servicio externo.
 
 ## 2. Widgets utilizados
 
@@ -82,7 +84,7 @@ const Column(
 
 **Dónde se utiliza:**
 - En la película destacada, para superponer la etiqueta `RECOMENDADA` sobre el póster.
-- En las tarjetas de películas populares, para colocar un icono de cine sobre el fondo del póster.
+- En las tarjetas de películas populares, para colocar elementos visuales sobre el fondo del póster.
 
 **Ejemplo de código:**
 
@@ -112,7 +114,7 @@ Stack(
 
 **Dónde se utiliza:**
 - En el buscador, para definir el contorno y el espacio interior.
-- En el área de la película destacada, para establecer el fondo del póster.
+- En el área de la película destacada.
 - En las etiquetas de los géneros.
 - En el botón `Ver detalle`.
 - En los fondos de las tarjetas de películas populares.
@@ -143,9 +145,12 @@ Container(
 
 ## 4. Tecnologías utilizadas
 
-- Flutter.
-- Dart.
-- Visual Studio Code.
+- Flutter y Dart para el desarrollo de la aplicación.
+- Visual Studio Code como entorno de desarrollo.
+- Paquete `http` para realizar solicitudes HTTP desde Dart.
+- PHP para desarrollar el backend que conecta la aplicación con TMDB.
+- XAMPP para ejecutar el servidor Apache localmente.
+- API de The Movie Database (TMDB) para obtener información de películas.
 - Git y GitHub para el control de versiones.
 
 ## 5. Ejecución del proyecto
@@ -153,20 +158,119 @@ Container(
 Para ejecutar la aplicación en Google Chrome desde el terminal, utiliza:
 
 ```bash
+flutter pub get
 flutter run -d chrome
 ```
 
 El archivo principal de la aplicación es `lib/main.dart`.
 
-## 6. Conclusión
+El servicio encargado de las peticiones HTTP se encuentra en:
 
-La actividad permite comprender cómo combinar los widgets básicos de Flutter para construir una interfaz organizada y visualmente coherente. En CineLista, estos widgets trabajan conjuntamente para presentar la información de películas mediante secciones, tarjetas y elementos superpuestos.
+`lib/services/peliculas_service.dart`
+
+### 5.1. Configuración del backend
+
+La aplicación utiliza un backend PHP que debe ejecutarse localmente mediante XAMPP.
+
+Los archivos del backend se encuentran en la carpeta:
+
+`C:\xampp\htdocs\cinelista_api\`
+
+La estructura utilizada es:
+
+```text
+cinelista_api/
+├── config.php
+├── index.php
+└── api/
+    └── peliculas.php
+```
+
+Para utilizar el backend:
+
+1. Iniciar Apache desde el panel de control de XAMPP.
+2. Configurar el token de acceso de TMDB en `config.php`.
+3. Mantener el token en el servidor y evitar publicarlo en GitHub.
+4. Comprobar que el backend responde desde el navegador mediante:
+
+```text
+http://localhost/cinelista_api/
+```
+
+**Nota:** el backend PHP y el servidor Apache deben estar activos para que la aplicación pueda consultar los datos de películas desde el entorno local.
+
+## 6. Integración de peticiones HTTP y API de TMDB
+
+### 6.1. Objetivo
+
+Implementar peticiones HTTP en CineLista para obtener información de películas desde Internet y mostrarla dinámicamente en la aplicación.
+
+La integración permite consultar películas populares, obtener información de una película destacada y recuperar los detalles de una película seleccionada.
+
+### 6.2. Selección de la API
+
+La actividad proponía distintas alternativas de APIs, entre ellas Marvel Developer API.
+
+Sin embargo, debido a la disponibilidad de acceso para desarrolladores, se seleccionó **The Movie Database (TMDB)** como alternativa. Esta API está directamente relacionada con la temática de CineLista y permite consultar información de películas.
+
+Documentación y recursos:
+- [Documentación oficial de Flutter: Obtener datos desde Internet](https://docs.flutter.dev/cookbook/networking/fetch-data).
+- [Paquete HTTP para Dart y Flutter](https://pub.dev/packages/http).
+- [The Movie Database (TMDB)](https://www.themoviedb.org/).
+
+### 6.3. Arquitectura de la integración
+
+La comunicación se realiza mediante la siguiente estructura:
+
+1. **Aplicación Flutter:** solicita información al backend utilizando el paquete `http`.
+2. **Backend PHP:** recibe las solicitudes y realiza las consultas correspondientes a TMDB.
+3. **API de TMDB:** proporciona los datos de las películas en formato JSON.
+4. **Respuesta al cliente:** PHP devuelve la información a Flutter, donde se procesa y presenta en la interfaz.
+
+Esta estructura permite mantener el token de acceso a TMDB en el servidor, sin incluirlo directamente en el código de la aplicación.
+
+### 6.4. Implementación del servicio HTTP
+
+Se creó el archivo `lib/services/peliculas_service.dart`, encargado de centralizar las solicitudes HTTP.
+
+El servicio implementa tres métodos principales:
+
+| Método | Función |
+|---|---|
+| `obtenerPeliculas()` | Recupera la lista de películas populares. |
+| `obtenerDestacada()` | Obtiene la información de la película destacada. |
+| `obtenerDetalle(int id)` | Recupera los detalles de una película mediante su identificador. |
+
+Se utiliza el método HTTP GET para solicitar los datos al backend. Las respuestas se procesan mediante `jsonDecode` para convertir el contenido JSON en estructuras de datos que Flutter puede utilizar.
+
+### 6.5. Funcionalidades implementadas
+
+La integración con TMDB permite:
+
+- Cargar películas populares desde Internet.
+- Obtener la información de la película destacada, Interstellar.
+- Mostrar información como título, fecha de estreno, géneros, duración, valoración y sinopsis, según los datos disponibles.
+- Seleccionar una película popular para consultar su información detallada.
+- Navegar a una pantalla de detalle con los datos recuperados desde el backend.
+
+### 6.6. Pruebas realizadas
+
+Se realizaron pruebas para verificar el funcionamiento de la integración:
+
+- Se comprobó que el backend PHP respondiera correctamente.
+- Se verificó la recepción de datos JSON desde TMDB.
+- Se comprobó la carga de películas populares en la aplicación.
+- Se verificó la recuperación de los datos de Interstellar.
+- Se probó la selección de películas populares y la navegación hacia sus respectivas pantallas de detalle.
+- Se ejecutó `flutter analyze` para comprobar que el código no presentara problemas detectados por el analizador de Flutter.
+
+Los resultados confirmaron que las peticiones HTTP funcionan correctamente y que la información recuperada se muestra en la aplicación.
 
 ## 7. Creación de la pantalla de bienvenida (Home Screen)
 
 ### 7.1. Objetivo
 
-Crear una pantalla de bienvenida para CineLista que muestre una imagen de fondo, el nombre de la aplicación, un icono relacionado con el cine y el mensaje "Hello World", utilizando widgets de Flutter.
+Crear una pantalla de bienvenida para CineLista que muestre una imagen de fondo, el nombre de la aplicación, un icono relacionado con el cine y un mensaje de bienvenida, utilizando widgets de Flutter.
 
 ### 7.2. Elementos implementados
 
@@ -174,10 +278,10 @@ La pantalla de bienvenida se estableció como la pantalla inicial de la aplicaci
 
 - **Imagen de fondo:** se utiliza `Image.network` para cargar una imagen relacionada con una sala de cine desde Internet.
 - **Nombre de la aplicación:** se muestra el título `CineLista`.
-- **Mensaje de bienvenida:** se incorpora el texto `Hello World`, solicitado en la actividad.
+- **Mensaje de bienvenida:** se incorpora el texto `¡Bienvenid@s!`.
 - **Icono:** se utiliza `Icon` con `Icons.movie_creation_outlined` para representar el cine.
 - **Texto descriptivo:** se añade el mensaje "Tu próxima película favorita te espera".
-- **Botón de navegación:** el botón "Entrar al catálogo" permite acceder a la pantalla del catálogo existente.
+- **Botón de navegación:** el botón "Entrar al catálogo" permite acceder a la pantalla del catálogo.
 
 ### 7.3. Widgets y componentes utilizados
 
@@ -196,13 +300,13 @@ La pantalla de bienvenida se estableció como la pantalla inicial de la aplicaci
 
 ### 7.4. Pruebas realizadas
 
-La aplicación se ejecutó en Google Chrome para comprobar el funcionamiento de la pantalla de bienvenida. Se verificó que la imagen de fondo, el icono, el nombre CineLista y el mensaje "Hello World" se mostraran correctamente.
+La aplicación se ejecutó en Google Chrome para comprobar el funcionamiento de la pantalla de bienvenida. Se verificó que la imagen de fondo, el icono, el nombre CineLista y el mensaje "¡Bienvenid@s!" se mostraran correctamente.
 
-También se comprobó que el botón "Entrar al catálogo" permitiera acceder a la pantalla del catálogo desarrollada previamente.
+También se comprobó que el botón "Entrar al catálogo" permitiera acceder a la pantalla del catálogo.
 
 ### 7.5. Resultado
 
-Se implementó una pantalla de bienvenida funcional que cumple los requisitos de la actividad y permite acceder al catálogo existente sin perder la interfaz desarrollada anteriormente.
+Se implementó una pantalla de bienvenida funcional que permite acceder al catálogo y mantiene la integración con las funcionalidades desarrolladas anteriormente.
 
 ## 8. Widgets adicionales de la pantalla de bienvenida
 
@@ -221,3 +325,11 @@ Además de los widgets documentados en la sección 2, la pantalla de bienvenida 
 | `MaterialPageRoute` | Definir la ruta de navegación hacia el catálogo. |
 
 Estos componentes complementan los widgets básicos documentados anteriormente y permiten construir una pantalla de bienvenida visualmente organizada e integrada con el resto de CineLista.
+
+## 9. Conclusión
+
+El desarrollo de CineLista permitió aplicar los principales widgets de Flutter para construir una interfaz organizada y visualmente coherente.
+
+Además, se incorporó una integración con servicios externos mediante peticiones HTTP, utilizando el paquete `http`, un backend PHP y la API de TMDB para recuperar información real de películas.
+
+Con estas implementaciones, la aplicación combina la construcción de interfaces móviles, la navegación entre pantallas y el consumo de datos desde Internet, cumpliendo con los objetivos de las actividades desarrolladas.
