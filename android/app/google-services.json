@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "532484786015",
+    "project_id": "cinelista-app",
+    "storage_bucket": "cinelista-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532484786015:android:167242d978b067c66218ea",
+        "android_client_info": {
+          "package_name": "com.example.ldsw_utilizacion_de_widgets"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIjRSKLAHBijrPxFQUcQ4zZ7KF2D_Jjh4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

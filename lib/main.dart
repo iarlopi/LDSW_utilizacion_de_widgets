@@ -1,8 +1,20 @@
 
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'services/peliculas_service.dart';
+import 'services/auth_service.dart';
+import 'services/peliculas_guardadas_service.dart';
+import 'firebase_options.dart';
+import 'screens/login_page.dart';
+import 'screens/registro_page.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const CineListaApp());
 }
 
@@ -12,6 +24,60 @@ const Color azul = Color(0xFF0875C9);
 const Color textoClaro = Color(0xFFF2F5F8);
 const Color textoSecundario = Color(0xFFB8C5D1);
 
+// Aplicación principal.
+class CineListaApp extends StatelessWidget {
+  const CineListaApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'CineLista',
+      theme: ThemeData(
+        useMaterial3: true,
+        scaffoldBackgroundColor: fondo,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: azul,
+          brightness: Brightness.dark,
+        ),
+        fontFamily: 'Roboto',
+      ),
+      home: const AuthGate(),
+    );
+  }
+}
+
+// Controla la navegación según el estado de autenticación.
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authService = AuthService();
+
+    return StreamBuilder(
+      stream: authService.cambiosAutenticacion,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: fondo,
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasData) {
+          return const CineListaPage();
+        }
+
+        return const WelcomeScreen();
+      },
+    );
+  }
+}
+
+// Pantalla de bienvenida.
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
@@ -81,16 +147,50 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 30),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CineListaPage(),
+
+                    // Opciones de autenticación.
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: azul,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 15,
+                            ),
                           ),
-                        );
-                      },
-                      child: const Text('Entrar al catálogo'),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LoginPage(),
+                              ),
+                            );
+                          },
+                          child: const Text('Iniciar sesión'),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 15,
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const RegistroPage(),
+                              ),
+                            );
+                          },
+                          child: const Text('Crear una cuenta'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -99,28 +199,6 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class CineListaApp extends StatelessWidget {
-  const CineListaApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'CineLista',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: fondo,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: azul,
-          brightness: Brightness.dark,
-        ),
-        fontFamily: 'Roboto',
-      ),
-      home: const WelcomeScreen(),
     );
   }
 }
@@ -135,6 +213,7 @@ class CineListaPage extends StatefulWidget {
 
 class _CineListaPageState extends State<CineListaPage> {
   final PeliculasService _servicioPeliculas = PeliculasService();
+  final AuthService _authService = AuthService();
 
   late Future<List<dynamic>> _peliculas;
   late Future<Map<String, dynamic>> _destacada;
@@ -144,6 +223,20 @@ class _CineListaPageState extends State<CineListaPage> {
     super.initState();
     _peliculas = _servicioPeliculas.obtenerPeliculas();
     _destacada = _servicioPeliculas.obtenerDestacada();
+  }
+
+  Future<void> _cerrarSesion() async {
+    try {
+      await _authService.cerrarSesion();
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo cerrar la sesión.'),
+        ),
+      );
+    }
   }
 
   @override
@@ -157,13 +250,28 @@ class _CineListaPageState extends State<CineListaPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Nombre y descripción de la aplicación.
-              const Text(
-                'CineLista',
-                style: TextStyle(
-                  color: textoClaro,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'CineLista',
+                      style: TextStyle(
+                        color: textoClaro,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Cerrar sesión',
+                    onPressed: _cerrarSesion,
+                    icon: const Icon(
+                      Icons.logout,
+                      color: textoClaro,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               const Text(
@@ -217,7 +325,8 @@ class _CineListaPageState extends State<CineListaPage> {
               FutureBuilder<Map<String, dynamic>>(
                 future: _destacada,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
                     return const SizedBox(
                       height: 220,
                       child: Center(
@@ -370,7 +479,7 @@ class _CineListaPageState extends State<CineListaPage> {
 
                         Navigator.push(
                           context,
-                           MaterialPageRoute(
+                          MaterialPageRoute(
                             builder: (context) =>
                                 PeliculaDetallePage(pelicula: pelicula),
                           ),
@@ -382,20 +491,20 @@ class _CineListaPageState extends State<CineListaPage> {
                           const SnackBar(
                             content: Text(
                               'No se pudieron cargar los detalles de la película.',
+                            ),
                           ),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text(
-                    'Ver detalle',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                        );
+                      }
+                    },
+                    child: const Text(
+                      'Ver detalle',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 25),
+              const SizedBox(height: 25),
 
               const Text(
                 'Por género',
@@ -616,41 +725,41 @@ class PeliculaPopular extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: SizedBox(
-            width: double.infinity,
-            height: 280,
-            child: posterPath != null && posterPath!.isNotEmpty
-                ? Image.network(
-                    'https://image.tmdb.org/t/p/w500$posterPath',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _posterPredeterminado();
-                    },
-                  )
-                : _posterPredeterminado(),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              width: double.infinity,
+              height: 280,
+              child: posterPath != null && posterPath!.isNotEmpty
+                  ? Image.network(
+                      'https://image.tmdb.org/t/p/w500$posterPath',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _posterPredeterminado();
+                      },
+                    )
+                  : _posterPredeterminado(),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          titulo,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: textoClaro,
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 8),
+          Text(
+            titulo,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: textoClaro,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          datos,
-          style: const TextStyle(
-            color: textoSecundario,
-            fontSize: 11,
+          const SizedBox(height: 3),
+          Text(
+            datos,
+            style: const TextStyle(
+              color: textoSecundario,
+              fontSize: 11,
+            ),
           ),
-        ),
         ],
       ),
     );
@@ -670,9 +779,8 @@ class PeliculaPopular extends StatelessWidget {
   }
 }
 
-
 // Pantalla con la información completa de una película.
-class PeliculaDetallePage extends StatelessWidget {
+class PeliculaDetallePage extends StatefulWidget {
   final Map<String, dynamic> pelicula;
 
   const PeliculaDetallePage({
@@ -681,10 +789,71 @@ class PeliculaDetallePage extends StatelessWidget {
   });
 
   @override
+  State<PeliculaDetallePage> createState() => _PeliculaDetallePageState();
+}
+
+class _PeliculaDetallePageState extends State<PeliculaDetallePage> {
+  final PeliculasGuardadasService _servicioGuardadas =
+      PeliculasGuardadasService();
+
+  bool _guardando = false;
+
+  Future<void> _guardarPelicula() async {
+    final id = widget.pelicula['id'];
+
+    if (id is! num) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se encontró el identificador de la película.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _guardando = true);
+
+    try {
+      final calificacion = widget.pelicula['vote_average'];
+
+      await _servicioGuardadas.guardarPelicula(
+        tmdbId: id.toInt(),
+        titulo: widget.pelicula['title']?.toString() ?? 'Sin título',
+        fechaLanzamiento: widget.pelicula['release_date']?.toString(),
+        posterPath: widget.pelicula['poster_path']?.toString(),
+        sinopsis: widget.pelicula['overview']?.toString(),
+        calificacion: calificacion is num ? calificacion.toDouble() : null,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Película guardada en tu lista.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo guardar la película: $error'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _guardando = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pelicula = widget.pelicula;
     final titulo = pelicula['title']?.toString() ?? 'Sin título';
     final fecha = pelicula['release_date']?.toString() ?? '';
-    final anio = fecha.length >= 4 ? fecha.substring(0, 4) : 'No disponible';
+    final anio =
+        fecha.length >= 4 ? fecha.substring(0, 4) : 'No disponible';
     final duracion = pelicula['runtime']?.toString() ?? '';
     final sinopsis = pelicula['overview']?.toString() ?? '';
     final calificacion = pelicula['vote_average'] is num
@@ -749,7 +918,11 @@ class PeliculaDetallePage extends StatelessWidget {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  const Icon(Icons.star, color: Color(0xFFFFC857), size: 21),
+                  const Icon(
+                    Icons.star,
+                    color: Color(0xFFFFC857),
+                    size: 21,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     '$calificacion / 10',
@@ -760,6 +933,35 @@ class PeliculaDetallePage extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _guardando ? null : _guardarPelicula,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azul,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  icon: _guardando
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.bookmark_add_outlined),
+                  label: Text(
+                    _guardando ? 'Guardando...' : 'Guardar en mi lista',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -772,7 +974,9 @@ class PeliculaDetallePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                sinopsis.isNotEmpty ? sinopsis : 'Sin sinopsis disponible.',
+                sinopsis.isNotEmpty
+                    ? sinopsis
+                    : 'Sin sinopsis disponible.',
                 style: const TextStyle(
                   color: textoSecundario,
                   fontSize: 15,

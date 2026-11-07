@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Variables de entorno y credenciales privadas
+.env
+.env.*
+!.env.example
