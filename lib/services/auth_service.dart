@@ -1,10 +1,19 @@
+
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Identificador de la cuenta administradora.
+  static const String administradorUid =
+      'WxI24UaMQHOWHh2AP2CR86ofyc53';
+
   // Obtener el usuario que tiene la sesión activa.
   User? get usuarioActual => _auth.currentUser;
+
+  // Comprobar si el usuario actual es administrador.
+  bool get esAdministrador =>
+      usuarioActual?.uid == administradorUid;
 
   // Escuchar los cambios en el estado de autenticación.
   Stream<User?> get cambiosAutenticacion =>
